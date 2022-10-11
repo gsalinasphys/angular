@@ -1,3 +1,4 @@
+import json
 import sys
 from math import cos, pi, sin, sqrt
 
@@ -13,10 +14,12 @@ import PyTransSetup
 PyTransSetup.pathSet()
 
 import PyTransAngular as PyT
-import PyTransScripts as PyS
 
 nF, nP = PyT.nF(), PyT.nP()
-pval = np.array([1/600, 9, 2e-5])   # Parameters [alpha, R, mphi]
+params = {'alpha': 1/600, 'R': 9, 'mphi': 2.e-5}
+with open("./output/params.json", "w") as file:
+    file.write(json.dumps(params))
+pval = np.array(list(params.values()))   # Parameters [alpha, R, mphi]
 
 r0, theta0 = 0.99, pi/4
 phi0 = r0 * np.array([cos(theta0), sin(theta0)])
@@ -78,3 +81,4 @@ plt.savefig("./output/background-canonical.png")
 plt.clf()
 
 np.save("./output/background", back)
+np.savetxt("./output/background.txt", back)
