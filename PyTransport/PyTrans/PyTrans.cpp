@@ -20,10 +20,10 @@
 #include "numpy/arrayobject.h"
 
 //don't adjust the labels at the end of the 4 lines below (they are used to fix directory structure)
-#include"/home/gsalinas/GitHub/MyTransport/PyTransport/CppTrans/NC/evolve.h"//evolve
-#include"/home/gsalinas/GitHub/MyTransport/PyTransport/CppTrans/NC/moments.h"//moments
-#include"/home/gsalinas/GitHub/MyTransport/PyTransport/CppTrans/NC/model.h"//model
-#include"/home/gsalinas/GitHub/MyTransport/PyTransport/CppTrans/stepper/rkf45.hpp"//stepper
+#include"/home/gsalinas/GitHub/angular/PyTransport/CppTrans/NC/evolve.h"//evolve
+#include"/home/gsalinas/GitHub/angular/PyTransport/CppTrans/NC/moments.h"//moments
+#include"/home/gsalinas/GitHub/angular/PyTransport/CppTrans/NC/model.h"//model
+#include"/home/gsalinas/GitHub/angular/PyTransport/CppTrans/stepper/rkf45.hpp"//stepper
 //************************************************************************************************* 
 
 #include <math.h>
@@ -38,7 +38,7 @@
 using namespace std;
 
 // The line below is updated evey time the moduleSetup file is run.
-// Package recompile attempted at: Wed Sep 28 11:32:37 2022
+// Package recompile attempted at: Tue Oct 11 15:34:54 2022
 
 
 // Changes python array into C array (or rather points to pyarray data)
