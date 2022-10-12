@@ -99,6 +99,7 @@ PR = np.array([epll(Gmatrices[ii], phidots.T[ii]) @
             epll(Gmatrices[ii], phidots.T[ii])
             for ii in range(len(Nsig))]) / 2 / epsilon
 PR_nodim = PR * k**3 / 2 / np.pi**2
+np.save("./output/PR", PR_nodim)
 plt.plot(Nsig, PR_nodim, c='k')
 plt.plot(Nsig, Pzeta_nodim, c='k', linestyle='--')
 plt.axvline(Nexit, c='gray', linestyle='--')
@@ -117,6 +118,7 @@ CRS = np.array([epll(Gmatrices[ii], phidots.T[ii]) @
             eperp(Gmatrices[ii], phidots.T[ii])
             for ii in range(len(Nsig))]) / 2 / epsilon
 CRS_nodim = CRS * k**3 / 2 / np.pi**2
+np.save("./output/CRS", CRS_nodim)
 plt.plot(Nsig, np.abs(CRS_nodim), c='k')
 plt.axvline(Nexit, c='gray', linestyle='--')
 plt.title(r'$C_{RS}$ evolution',fontsize=16);
@@ -134,6 +136,7 @@ PS = np.array([eperp(Gmatrices[ii], phidots.T[ii]) @
             eperp(Gmatrices[ii], phidots.T[ii])
             for ii in range(len(Nsig))]) / 2 / epsilon
 PS_nodim = PS * k**3 / 2 / np.pi**2
+np.save("./output/PS", PS_nodim)
 plt.plot(Nsig, PS_nodim, c='k')
 plt.axvline(Nexit, c='gray', linestyle='--')
 plt.title(r'$P_S$ evolution',fontsize=16);
