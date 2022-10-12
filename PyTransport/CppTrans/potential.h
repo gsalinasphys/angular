@@ -27,7 +27,7 @@
 using namespace std;
 
 // #Rewrite
-// Potential file rewriten at Tue Oct 11 17:47:29 2022
+// Potential file rewriten at Wed Oct 12 15:06:56 2022
 
 class potential
 {

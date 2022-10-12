@@ -26,6 +26,7 @@ Ns, phis, phidots =  back.T[0], back.T[1:nF+1], back.T[nF+1:]
 
 
 Hs = np.array([PyT.H(elem, pval) for elem in back[:, 1:]])
+np.save("./output/Hs", Hs)
 plt.plot(Ns, Hs, c="k", linewidth=2)
 plt.title('Hubble parameter')
 plt.xlabel(r'$N$', fontsize=16)
@@ -37,6 +38,7 @@ plt.clf()
 
 dN = Ns[1] - Ns[0]
 epsilon = -np.gradient(Hs, dN)/Hs
+np.save("./output/epsilon", epsilon)
 plt.plot(Ns, epsilon, c="k", linewidth=2)
 plt.title('Epsilon parameter')
 plt.xlabel(r'$N$', fontsize=16)
@@ -48,6 +50,7 @@ plt.clf()
 
 with open("./output/G.txt", "rb") as file:
     G = pickle.load(file)
+Gamma = PyTransSetup.fieldmetric(G, nF, nP)[1]
 
 params_subs = {'p_'+str(ii): pval[ii] for ii in range(len(pval))}
 Gparams = G.subs(params_subs)

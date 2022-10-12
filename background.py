@@ -2,10 +2,13 @@ import json
 import sys
 from math import cos, pi, sin, sqrt
 
+import matplotlib as mpl
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['figure.dpi'] = 600
 location = "/home/gsalinas/GitHub/angular/PyTransport"
 sys.path.append(location)
 
@@ -43,7 +46,7 @@ iexit = np.argmin(np.abs(Ns - Nexit))
 print(f'Number of e-folds: {Nend:.3}')
 
 palette = sns.color_palette("crest", as_cmap=True)
-num_points = 10_000
+num_points = 500
 sns.scatterplot(x=phis[0][::Nsteps//num_points],
                 y=phis[1][::Nsteps//num_points],
                 hue=Ns[::Nsteps//num_points],
