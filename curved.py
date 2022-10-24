@@ -14,3 +14,8 @@ def eperp(Gmatrix, phidot):
     epll_vec = epll(Gmatrix, phidot)
     eperp_notnorm = np.array([epll_vec[1], -epll_vec[0]])
     return eperp_notnorm / magG(Gmatrix, eperp_notnorm)
+
+def eperp2d(Gmatrix, phidot, eta):
+    epll_vec = epll(Gmatrix, phidot)
+    eperp_notnorm = np.matmul(np.identity(2) - np.outer(epll_vec, np.matmul(Gmatrix, epll_vec)), eta)
+    return eperp_notnorm / magG(Gmatrix, eperp_notnorm)
