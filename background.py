@@ -20,7 +20,7 @@ import PyTransAngular as PyT
 
 nF, nP = PyT.nF(), PyT.nP()
 params = {'alpha': 1/600, 'R': 9, 'mphi': 2.e-5}
-with open("./output/params.json", "w") as file:
+with open("./output/setup/params.json", "w") as file:
     file.write(json.dumps(params))
 pval = np.array(list(params.values()))   # Parameters [alpha, R, mphi]
 
@@ -30,7 +30,7 @@ phidot0 = np.zeros(2)
 initial = np.concatenate((phi0, phidot0))
 
 Nstart, Nend = 0., 100
-Nsteps = 1_000_000
+Nsteps = 500_000
 Nrange = np.linspace(Nstart, Nend, Nsteps)
 
 tols = np.array([10**-12, 10**-12])
@@ -56,7 +56,7 @@ plt.scatter(phis[0][iexit], phis[1][iexit], c="k")
 plt.xlabel(r'$\phi$')
 plt.ylabel(r'$\chi$')
 plt.tight_layout()
-plt.savefig("./output/background.png")
+plt.savefig("./output/background/background.png")
 plt.clf()
 
 sns.scatterplot(x=rs[::Nsteps//num_points],
@@ -68,7 +68,7 @@ plt.scatter(rs[iexit], thetas[iexit], c="k")
 plt.xlabel(r'$\psi \cos(\theta)$')
 plt.ylabel(r'$\psi \sin(\theta)$')
 plt.tight_layout()
-plt.savefig("./output/background-polar.png")
+plt.savefig("./output/background/background-polar.png")
 plt.clf()
 
 sns.scatterplot(x=(psis*np.cos(thetas))[::Nsteps//num_points],
@@ -80,8 +80,8 @@ plt.scatter((psis*np.cos(thetas))[iexit], (psis*np.sin(thetas))[iexit], c="k")
 plt.xlabel(r'$\psi \cos(\theta)$')
 plt.ylabel(r'$\psi \sin(\theta)$')
 plt.tight_layout()
-plt.savefig("./output/background-canonical.png")
+plt.savefig("./output/background/background-canonical.png")
 plt.clf()
 
-np.save("./output/background", back)
-np.savetxt("./output/background.txt", back)
+np.save("./output/background/background", back)
+np.savetxt("./output/background/background.txt", back)
