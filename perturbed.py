@@ -19,28 +19,39 @@ PyTransSetup.pathSet()
 import PyTransAngular as PyT
 
 nF, nP = PyT.nF(), PyT.nP()
-params = {'alpha': 1/600, 'R': 9, 'mphi': 2.e-5}
-with open("./output/setup/params.json", "w") as file:
-    file.write(json.dumps(params))
-pval = np.array(list(params.values()))   # Parameters [alpha, R, mphi]
+with open("./output/setup/params.json", "r") as file:
+    params = json.loads(file.readline())
+pval = np.array(list(params.values()))
 
-r0, theta0 = 0.99, pi/4
-phi0 = r0 * np.array([cos(theta0), sin(theta0)])
-phidot0 = np.zeros(2)
-initial = np.concatenate((phi0, phidot0))
+phisexit = np.load("./output/background/exit.npy")
+print(phisexit)
+initials = [phisexit, phisexit + np.array([1.01*phisexit[0], 0., 0., 0.], phisexit + np.array([0., 1.01*phisexit[1], 0., 0.]))]
 
 Nstart, Nend = 0., 100
 Nsteps = 500_000
 Nrange = np.linspace(Nstart, Nend, Nsteps)
 
 tols = np.array([10**-12, 10**-12])
-back = PyT.backEvolve(Nrange, initial, pval, tols, True)
-Ns, phis, phidots =  back.T[0], back.T[1:nF+1], back.T[nF+1:]
-rs = np.sqrt(phis[0]**2 + phis[1]**2)
-thetas = np.arctan(phis[1]/phis[0])
-psis = sqrt(6*pval[0]) * np.arctanh(rs)
+all_Ns, all_phis, all_phidots = [], [], []
+labels = ["Original", r"Perturbed in $\phi$ (10%)", r"Perturbed in $\chi$ (10%)"]
+for initial in initials:
+    back = PyT.backEvolve(Nrange, initial, pval, tols, True)
+    Ns, phis, phidots =  back.T[0], back.T[1:nF+1], back.T[nF+1:]
 
-Nend = Ns[-1]
-Nexit = Nend - 55
-iexit = np.argmin(np.abs(Ns - Nexit))
-print(phis.T[iexit], phidots.T[iexit])
+    all_Ns.append(Ns)
+    all_phis.append(phis)
+    all_phidots.append(phidots)
+
+palette = sns.color_palette("crest", as_cmap=True)
+num_points = 500
+for phis in all_phis:
+    sns.scatterplot(x=phis[0][::Nsteps//num_points],
+                    y=phis[1][::Nsteps//num_points],
+                    hue=Ns[::Nsteps//num_points],
+                    s=5,
+                    palette=palette)
+plt.xlabel(r'$\phi$')
+plt.ylabel(r'$\chi$')
+plt.tight_layout()
+plt.savefig("./output/perturbed/from_exit.png")
+plt.clf()

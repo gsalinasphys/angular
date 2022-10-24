@@ -41,9 +41,10 @@ thetas = np.arctan(phis[1]/phis[0])
 psis = sqrt(6*pval[0]) * np.arctanh(rs)
 
 Nend = Ns[-1]
+print(f'Number of e-folds: {Nend:.3}')
 Nexit = Nend - 55
 iexit = np.argmin(np.abs(Ns - Nexit))
-print(f'Number of e-folds: {Nend:.3}')
+np.save("./output/background/exit", np.concatenate((phis.T[iexit], phidots.T[iexit])))
 
 palette = sns.color_palette("crest", as_cmap=True)
 num_points = 500
