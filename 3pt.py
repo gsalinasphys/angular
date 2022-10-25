@@ -1,17 +1,10 @@
 import json
-import pickle
 import sys
 from itertools import combinations_with_replacement
-from math import cos, pi, sin, sqrt
-from timeit import repeat
 
 import matplotlib as mpl
 import numpy as np
-import seaborn as sns
 from matplotlib import pyplot as plt
-from sympy.utilities import lambdify
-
-from curved import dotG, epll, magG
 
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['figure.dpi'] = 600

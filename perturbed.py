@@ -42,16 +42,20 @@ for initial in initials:
     all_phis.append(phis)
     all_phidots.append(phidots)
 
-palette = sns.color_palette("crest", as_cmap=True)
-num_points = 500
-for phis in all_phis:
-    sns.scatterplot(x=phis[0][::Nsteps//num_points],
-                    y=phis[1][::Nsteps//num_points],
-                    hue=Ns[::Nsteps//num_points],
-                    s=5,
-                    palette=palette)
-plt.xlabel(r'$\phi$')
-plt.ylabel(r'$\chi$')
-plt.tight_layout()
-plt.savefig("./output/perturbed/from_exit.png")
-plt.clf()
+print(all_Ns)
+print(all_phis)
+print(all_phis)
+
+# palette = sns.color_palette("crest", as_cmap=True)
+# num_points = 500
+# for phis in all_phis:
+#     sns.scatterplot(x=phis[0][::Nsteps//num_points],
+#                     y=phis[1][::Nsteps//num_points],
+#                     hue=Ns[::Nsteps//num_points],
+#                     s=5,
+#                     palette=palette)
+# plt.xlabel(r'$\phi$')
+# plt.ylabel(r'$\chi$')
+# plt.tight_layout()
+# plt.savefig("./output/perturbed/from_exit.png")
+# plt.clf()

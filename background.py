@@ -66,8 +66,8 @@ sns.scatterplot(x=rs[::Nsteps//num_points],
                 s=5,
                 palette=palette)
 plt.scatter(rs[iexit], thetas[iexit], c="k")
-plt.xlabel(r'$\psi \cos(\theta)$')
-plt.ylabel(r'$\psi \sin(\theta)$')
+plt.xlabel(r'$r$')
+plt.ylabel(r'$\theta$')
 plt.tight_layout()
 plt.savefig("./output/background/background-polar.png")
 plt.clf()

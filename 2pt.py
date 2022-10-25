@@ -1,15 +1,14 @@
 import json
 import pickle
 import sys
-from math import cos, pi, sin, sqrt
+from math import sqrt
 
 import matplotlib as mpl
 import numpy as np
-import seaborn as sns
 from matplotlib import pyplot as plt
 from sympy.utilities import lambdify
 
-from curved import dotG, eperp2d, epll, magG
+from curved import eperp2d, epll
 
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['figure.dpi'] = 600
@@ -50,13 +49,9 @@ nF, nP = PyT.nF(), PyT.nP()
 with open("./output/setup/params.json", "r") as file:
     params = json.loads(file.readline())
 pval = np.array(list(params.values()))
-Npoints = 10_000
 back = np.load("./output/background/background.npy")
-back = back[::len(back)//Npoints]
 epsilon = np.load("./output/background/epsilon.npy")
-epsilon = epsilon[::len(epsilon)//Npoints]
 etas = np.load("./output/background/etas.npy")
-etas = etas.T[::len(etas.T)//Npoints].T
 Ns =  back.T[0]
 
 Nend = Ns[-1]
@@ -71,9 +66,9 @@ Nstart, backExitMinus = PyS.ICsBE(NB, k, back, pval, PyT)
 
 print(f"2-pt calculation starts at: {Nstart:.3} e-folds")
 
-Nev = Ns[Ns >= Nstart]
-back = back[Ns >= Nstart]
-epsilon = epsilon[Ns >= Nstart]
+Nev = Ns[Ns > Nstart]
+back = back[Ns > Nstart]
+epsilon = epsilon[Ns > Nstart]
 phis, phidots = back.T[1:nF+1], back.T[nF+1:]
 
 tols = np.array([10**-8, 10**-8])

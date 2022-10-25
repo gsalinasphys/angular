@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sympy.utilities import lambdify
 
-from curved import dotG, eperp2d, epll, magG
+from curved import dotG, eperp2d, epll
 
 location = "/home/gsalinas/GitHub/angular/PyTransport"
 sys.path.append(location)
