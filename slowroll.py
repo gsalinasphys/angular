@@ -6,6 +6,7 @@ from itertools import combinations_with_replacement, product
 from math import cos, pi, sin
 from typing import Callable, List
 
+import numdifftools as nd
 import numpy as np
 from matplotlib import pyplot as plt
 from sympy.utilities import lambdify
@@ -114,17 +115,14 @@ def get_kin_basis(back: np.ndarray, params: dict) -> np.ndarray:
     return np.hstack((back[:, 0].reshape(-1,1), eplls, eperps))
 
 def get_eta_parallel_perp(back: np.ndarray, params: dict) -> np.ndarray:
+    nF = PyT.nF()
     Gs = get_metrics(back, params)
     etas = get_etas(back, params)[:, 1:]
-    eplls, eperps = get_kin_basis(back, params)[:, 1:3], get_kin_basis(back, params)[:, 3:]
+    eplls, eperps = get_kin_basis(back, params)[:, 1:nF+1], get_kin_basis(back, params)[:, nF+1:]
     etaplls = np.array([dotG(Gs[ii], etas[ii], eplls[ii]) for ii in range(len(back[:, 0]))])
     etaperps = np.array([dotG(Gs[ii], etas[ii], eperps[ii]) for ii in range(len(back[:, 0]))])
 
     return np.hstack((back[:, 0].reshape(-1,1), etaplls.reshape(-1,1), etaperps.reshape(-1,1)))
-
-# def mass_matrix(back: np.ndarray, params: dict) -> np.ndarray:
-#     pval = list(params.values())
-#     np.gradient(np.gradient(PyT.V()
 
 if __name__ == '__main__':
     nF, nP = PyT.nF(), PyT.nP()
@@ -132,101 +130,65 @@ if __name__ == '__main__':
         params = json.loads(file.readline())
     back = np.load("./output/background/background.npy")
 
-    Nend = back[-1, 0]
-    Nexit = Nend - 55
-    iexit = np.argmin(np.abs(back[:, 0] - Nexit))
+    with open("./output/setup/G.txt", "rb") as file:
+        G = pickle.load(file)
 
-    # with open("./output/setup/G.txt", "rb") as file:
-    #     G = pickle.load(file)
+    Hs = get_Hs(back, params)
+    np.save("./output/background/Hs", Hs)
+    plt.plot(Hs[:, 0], Hs[:, 1], c="k", linewidth=2)
+    plt.title('Hubble parameter')
+    plt.xlabel(r'$N$', fontsize=16)
+    plt.ylabel(r'$H$', fontsize=16)
+    plt.yscale('log')
+    plt.tight_layout()
+    plt.savefig("./output/background/Hs.png")
+    plt.clf()
 
-    # with open("./output/setup/d1logV.txt", "rb") as file:
-    #     d1logV = pickle.load(file)
+    epsilons = get_epsilons(back, params)
+    np.save("./output/background/epsilons", epsilons)
+    plt.plot(epsilons[:, 0], epsilons[:, 1], c="k", linewidth=2)
+    plt.title('Epsilon parameter')
+    plt.xlabel(r'$N$', fontsize=16)
+    plt.ylabel(r'$\epsilon$', fontsize=16)
+    plt.yscale('log')
+    plt.tight_layout()
+    plt.savefig("./output/background/epsilons.png")
+    plt.clf()
 
-    # with open("./output/setup/d2logV.txt", "rb") as file:
-    #     d2logV = pickle.load(file)
+    phiprimes = get_phi_primes(back, params)
+    np.save("./output/background/phiprimes", phiprimes)
+    phidoubleprimes = get_phi_double_primes(back, params)
+    np.save("./output/background/phidoubleprimes", phidoubleprimes)
 
-    # with open("./output/setup/d11logV.txt", "rb") as file:
-    #     d11logV = pickle.load(file)
+    etaskin = get_eta_parallel_perp(back, params)
+    etaplls, etaperps = etaskin[:, 1], etaskin[:, 2]
+    np.save("./output/background/etaplls", etaplls)
+    plt.plot(back[:, 0], np.abs(etaplls), c="k", linewidth=2)
+    plt.title('Eta parallel')
+    plt.xlabel(r'$N$', fontsize=16)
+    plt.ylabel(r'$\vert \eta_\parallel \vert$', fontsize=16)
+    plt.yscale('log')
+    plt.tight_layout()
+    plt.savefig("./output/background/etaplls.png")
+    plt.clf()
 
-    # with open("./output/setup/d12logV.txt", "rb") as file:
-    #     d12logV = pickle.load(file)
+    np.save("./output/background/etaperps", etaperps)
+    plt.plot(back[:, 0], etaperps, c="k", linewidth=2)
+    plt.title('Eta perpendicular')
+    plt.xlabel(r'$N$', fontsize=16)
+    plt.ylabel(r'$\eta_\perp$', fontsize=16)
+    plt.yscale('log')
+    plt.tight_layout()
+    plt.savefig("./output/background/etaperps.png")
+    plt.clf()
 
-    # with open("./output/setup/d22logV.txt", "rb") as file:
-    #     d22logV = pickle.load(file)
-
-    # pval = list(params.values())
-    # params_subs = {'p_'+str(ii): pval[ii] for ii in range(len(pval))}
-    # C11 = d11logV.subs(params_subs).subs([("f_0", back[iexit, 1]),("f_1", back[iexit, 2])])
-    # C12 = d12logV.subs(params_subs).subs([("f_0", back[iexit, 1]),("f_1", back[iexit, 2])])
-    # C22 = d22logV.subs(params_subs).subs([("f_0", back[iexit, 1]),("f_1", back[iexit, 2])])
-    # print(np.array([[C11, C12], [C12, C22]]))
-
-
-    # Hs = get_Hs(back, params)
-    # np.save("./output/background/Hs", Hs)
-    # plt.plot(Hs[:, 0], Hs[:, 1], c="k", linewidth=2)
-    # plt.title('Hubble parameter')
-    # plt.xlabel(r'$N$', fontsize=16)
-    # plt.ylabel(r'$H$', fontsize=16)
-    # plt.yscale('log')
-    # plt.tight_layout()
-    # plt.savefig("./output/background/Hs.png")
-    # plt.clf()
-
-    # epsilons = get_epsilons(back, params)
-    # np.save("./output/background/epsilons", epsilons)
-    # plt.plot(epsilons[:, 0], epsilons[:, 1], c="k", linewidth=2)
-    # plt.title('Epsilon parameter')
-    # plt.xlabel(r'$N$', fontsize=16)
-    # plt.ylabel(r'$\epsilon$', fontsize=16)
-    # plt.yscale('log')
-    # plt.tight_layout()
-    # plt.savefig("./output/background/epsilons.png")
-    # plt.clf()
-
-    # phiprimes = get_phi_primes(back, params)
-    # np.save("./output/background/phiprimes", phiprimes)
-    # phidoubleprimes = get_phi_double_primes(back, params)
-    # np.save("./output/background/phidoubleprimes", phidoubleprimes)
-
-    Gs = get_metrics(back, params)
-    Gammas = get_christoffels(back, params)
-
-    etas = get_etas(back, params)
-    np.save("./output/background/etas", etas)
-    print(etas[iexit])
-
-    # kin_basis = get_kin_basis(back, params)
-    # np.save("./output/background/kin_basis", kin_basis)
-
-    # etaplls, etaperps = get_eta_parallel_perp(back, params)[:, 1], get_eta_parallel_perp(back, params)[:, 2]
-    # np.save("./output/background/etaplls", etaplls)
-    # plt.plot(back[:, 0], etaplls, c="k", linewidth=2)
-    # plt.title('Eta parallel')
-    # plt.xlabel(r'$N$', fontsize=16)
-    # plt.ylabel(r'$\eta_\parallel$', fontsize=16)
-    # plt.yscale('log')
-    # plt.tight_layout()
-    # plt.savefig("./output/background/etaplls.png")
-    # plt.clf()
-
-    # np.save("./output/background/etaperps", etaperps)
-    # plt.plot(back[:, 0], etaperps, c="k", linewidth=2)
-    # plt.title('Eta perpendicular')
-    # plt.xlabel(r'$N$', fontsize=16)
-    # plt.ylabel(r'$\eta_\perp$', fontsize=16)
-    # plt.yscale('log')
-    # plt.tight_layout()
-    # plt.savefig("./output/background/etaperps.png")
-    # plt.clf()
-
-    # omegas = etaperps / np.sqrt(2*epsilons[:, 1])
-    # np.save("./output/background/omegas", omegas)
-    # plt.plot(back[:, 0], omegas, c="k", linewidth=2)
-    # plt.title('Turn rate')
-    # plt.xlabel(r'$N$', fontsize=16)
-    # plt.ylabel(r'$\omega$', fontsize=16)
-    # plt.yscale('log')
-    # plt.tight_layout()
-    # plt.savefig("./output/background/omegas.png")
-    # plt.clf()
+    omegas = etaperps / np.sqrt(2*epsilons[:, 1])
+    np.save("./output/background/omegas", omegas)
+    plt.plot(back[:, 0], omegas, c="k", linewidth=2)
+    plt.title('Turn rate')
+    plt.xlabel(r'$N$', fontsize=16)
+    plt.ylabel(r'$\omega$', fontsize=16)
+    plt.yscale('log')
+    plt.tight_layout()
+    plt.savefig("./output/background/omegas.png")
+    plt.clf()
