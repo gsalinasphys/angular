@@ -160,6 +160,9 @@ if __name__ == '__main__':
     phidoubleprimes = get_phi_double_primes(back, params)
     np.save("./output/background/phidoubleprimes", phidoubleprimes)
 
+    etas = get_etas(back, params)
+    np.save("./output/background/etas", etas)
+
     etaskin = get_eta_parallel_perp(back, params)
     etaplls, etaperps = etaskin[:, 1], etaskin[:, 2]
     np.save("./output/background/etaplls", etaplls)

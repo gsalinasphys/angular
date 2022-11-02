@@ -1,7 +1,7 @@
 import json
 import pickle
 import sys
-from math import cos, pi, sin
+from math import atan, cos, pi, sin, sqrt
 
 import matplotlib as mpl
 import numpy as np
@@ -10,7 +10,8 @@ from matplotlib import pyplot as plt
 from background import get_background
 from curved import dotG, epll, magG
 from slowroll import (get_christoffels, get_epsilons, get_eta_parallel_perp,
-                      get_etas, get_kin_basis, get_metrics, get_phi_primes)
+                      get_etas, get_Hs, get_kin_basis, get_metrics,
+                      get_phi_primes)
 
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['figure.dpi'] = 600
@@ -41,6 +42,18 @@ def deform_background(back: np.ndarray, params: dict, efolds_from_end: float = 5
     initials = [phis_phidots_exit,
                 phis_phidots_exit*np.array([1.+epsilon, 1., 1., 1.]),
                 phis_phidots_exit*np.array([1., 1.+epsilon, 1., 1.])]
+
+    Hs = get_Hs(back, params)
+    mphi, R =  params['mphi'], params['R']
+    deformed_rs = [np.linalg.norm(initials[ii][:2]) for ii in range(1, 3)]
+    deformed_thetas = [atan(initials[ii][1]/initials[ii][0]) for ii in range(1, 3)]
+    deformed_thetadots = [-1 / 18 / Hs[iexit, 1] * mphi**2 * (R-1) * (1-deformed_rs[ii]**2)**2 * \
+                        initials[ii+1][0] * initials[ii+1][1] / deformed_rs[ii]**2 for ii in range(2)]
+    deformed_phidots = [deformed_rs[ii] * deformed_thetadots[ii] * np.array([-sin(deformed_thetas[ii]), cos(deformed_thetas[ii])]) for ii in range(2)]
+
+    initials = [phis_phidots_exit,
+                phis_phidots_exit*np.array([1.+epsilon, 1., 0., 0.]) + np.concatenate(([0.,0.], deformed_phidots[0])),
+                phis_phidots_exit*np.array([1., 1.+epsilon, 0., 0.]) + np.concatenate(([0.,0.], deformed_phidots[1]))]
 
     all_backs = [get_background(initial, params, Nrange=Nrange, tol=tol) for initial in initials]
     min_length = min([len(backgnd) for backgnd in all_backs])
@@ -74,8 +87,8 @@ def grad_etas_exit(deformed_back: np.ndarray, params: dict):
     etas = deformed_etas(deformed_back, params)[0]
     Gammas = get_christoffels(deformed_back[:, :5], params)
 
-    grad = np.array([[(etas[3] - etas[1]) / dphis[0], (etas[5] - etas[1]) / dphis[1]],
-                    [(etas[4] - etas[2]) / dphis[0], (etas[6] - etas[2]) / dphis[1]]])
+    grad = np.array([[(etas[3] - etas[1]) / dphis[0], (etas[4] - etas[2]) / dphis[0]],
+                    [(etas[5] - etas[1]) / dphis[1], (etas[6] - etas[2]) / dphis[1]]])
 
     for aa in range(2):
         for bb in range(2):
@@ -92,7 +105,6 @@ def get_mass_matrices_exit(deformed_back: np.ndarray, params: dict) -> np.ndarra
 
 def get_tildeM_exit(deformed_back: np.ndarray, params: dict) -> np.ndarray:
     G = get_metrics(deformed_back[:, :5], params)[0]
-    print()
     epsilon = get_epsilons(deformed_back[:, :5], params)[0, 1:]
     tildeM = get_mass_matrices_exit(deformed_back[:, :5], params) + grad_etas_exit(deformed_back, params) @ G / (3-epsilon)
     
@@ -124,25 +136,45 @@ if __name__ == '__main__':
     # print(get_mass_matrices_exit(deformed_back, params))
 
     epsilon_exit = get_epsilons(deformed_back[:, :5], params)[0, 1]
-    # print(epsilon_exit)
+    print(epsilon_exit)
 
     kin_basis = get_kin_basis(deformed_back[:, :5], params)
     epll_exit, eperp_exit = kin_basis[0, 1:3], kin_basis[0, 3:5]
     # print(epll_exit, eperp_exit)
 
-    grad_epsilon = grad_epsilon_exit(deformed_back, params)
-    print(grad_epsilon)
-    grad_etas = grad_etas_exit(deformed_back, params)
+    eta_pll_exit = get_eta_parallel_perp(deformed_back[:, :5], params)[0, 1]
+    eta_perp_exit = get_eta_parallel_perp(deformed_back[:, :5], params)[0, 2]
+    print(eta_perp_exit)
+
+    # grad_epsilon = grad_epsilon_exit(deformed_back, params)
+    # print(grad_epsilon)
+    # grad_etas = grad_etas_exit(deformed_back, params)
     # print(grad_etas)
+    # print(deformed_back[0])
+    # print(get_mass_matrices_exit(deformed_back, params))
     tildeM = get_tildeM_exit(deformed_back, params)
     # print(tildeM)
 
-    phi_prime_exit = get_phi_primes(deformed_back[:, :5], params)[0, 1:]
+    # phi_prime_exit = get_phi_primes(deformed_back[:, :5], params)[0, 1:]
 
-    print(tildeM @ phi_prime_exit)
+    # print(tildeM @ phi_prime_exit)
 
-    print(epll_exit @ grad_epsilon)
-    print(-np.sqrt(2*epsilon_exit) * epll_exit @ tildeM @ epll_exit)
+    # print(epll_exit @ grad_epsilon)
+    # print(-np.sqrt(2*epsilon_exit) * epll_exit @ tildeM @ epll_exit)
 
-    print(eperp_exit @ grad_epsilon)
-    print(-np.sqrt(2*epsilon_exit) * eperp_exit @ tildeM @ epll_exit)
+    # print(eperp_exit @ grad_epsilon)
+    # print(-np.sqrt(2*epsilon_exit) * eperp_exit @ tildeM @ epll_exit)
+
+    print(eperp_exit @ tildeM @ epll_exit)
+    print(epll_exit @ tildeM @ eperp_exit)
+
+    I1 = 0.03769592688493446
+    I2 = 0.012327765535058
+    I3 = 0.33950974428255654
+    I4 = 0.7590259701237988
+    I5 = 0.21191511228469154
+
+    print(eperp_exit @ tildeM @ eperp_exit * I5)
+    print(eta_perp_exit**2 / (3-epsilon_exit)**2 * I5)
+    print(-eta_perp_exit / sqrt(2*epsilon_exit) * I4)
+    print(-eta_pll_exit / sqrt(2*epsilon_exit) * I3)
