@@ -84,8 +84,11 @@ def get_PR_PS_CRS(back: np.ndarray, params: dict, efolds_before: float, NB: floa
 
     return PR_nodim, CRS_nodim, PS_nodim
 
-def beta(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray) -> np.ndarray:
-    return CRS / np.sqrt(PR * PS)
+def alpha(PR: np.ndarray, PS: np.ndarray) -> np.ndarray:
+    return PS / PR
+
+def beta(PR: np.ndarray, CRS: np.ndarray) -> np.ndarray:
+    return CRS / PR
 
 def TRS(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray, iexit: int) -> np.ndarray:
     return (-CRS[iexit] + np.sqrt(CRS[iexit]**2 + PR*PS[iexit] - PR[iexit]*PS[iexit])) / PS[iexit]
@@ -93,17 +96,31 @@ def TRS(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray, iexit: int) -> np.ndarr
 def TSS(PS: np.ndarray, iexit: int) -> np.ndarray:
     return np.sqrt(PS / PS[iexit])
 
+# def Is(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray, iexit: int):
+#     beta_end = beta(PR, CRS, PS)[-1]
+#     TRS_end = TRS(PR, CRS, PS, iexit)[-1]
+
+#     I1 = beta_end * sqrt(PS[iexit]/PR[-1]) * (1 - TRS_end*beta_end*sqrt(PS[iexit]/PR[-1]))
+#     I2 = beta_end**2 * PS[iexit]/PR[-1]
+#     I3 = 1 - TRS_end*beta_end*sqrt(PS[iexit]/PR[-1])
+#     I4 = TRS_end * (1 - 2*TRS_end*beta_end*sqrt(PS[iexit]/PR[-1]) + (1+TRS_end**2)*beta_end**2*PS[iexit]/PR[-1])
+#     I5 = beta_end * sqrt(PS[iexit]/PR[-1]) * (TRS_end - (1+TRS_end**2)*beta_end*sqrt(PS[iexit]/PR[-1]))
+
+#     return I1, I2, I3, I4, I5
+
 def Is(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray, iexit: int):
-    beta_end = beta(PR, CRS, PS)[-1]
+    alpha_exit = alpha(PR, PS)[iexit]
+    beta_exit = beta(PR, CRS)[iexit]
     TRS_end = TRS(PR, CRS, PS, iexit)[-1]
 
-    I1 = beta_end * sqrt(PS[iexit]/PR[-1]) * (1 - TRS_end*beta_end*sqrt(PS[iexit]/PR[-1]))
-    I2 = beta_end**2 * PS[iexit]/PR[-1]
-    I3 = 1 - TRS_end*beta_end*sqrt(PS[iexit]/PR[-1])
-    I4 = TRS_end * (1 - 2*TRS_end*beta_end*sqrt(PS[iexit]/PR[-1]) + (1+TRS_end**2)*beta_end**2*PS[iexit]/PR[-1])
-    I5 = beta_end * sqrt(PS[iexit]/PR[-1]) * (TRS_end - (1+TRS_end**2)*beta_end*sqrt(PS[iexit]/PR[-1]))
+    I1 = (beta_exit+TRS_end*alpha_exit) * (1+TRS_end*beta_exit) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)**2
+    I2 = (beta_exit+TRS_end*alpha_exit)**2 / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)**2
+    I3 = -(1+TRS_end*beta_exit) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)
+    I4 = (1+TRS_end*beta_exit) * (beta_exit+(alpha_exit-1)*TRS_end-beta_exit*TRS_end**2) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)**2
+    I5 = (beta_exit+TRS_end*alpha_exit) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)
+    I6 = (beta_exit+TRS_end*alpha_exit) * (beta_exit+(alpha_exit-1)*TRS_end-beta_exit*TRS_end**2) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)**2
 
-    return I1, I2, I3, I4, I5
+    return I1, I2, I3, I4, I5, I6
 
 nF, nP = PyT.nF(), PyT.nP()
 with open("./output/setup/params.json", "r") as file:
@@ -170,7 +187,7 @@ plt.tight_layout()
 plt.savefig("./output/2pt/PS.png")
 plt.clf()
 
-betaa = beta(PR, CRS, PS)
+betaa = beta(PR, CRS)
 np.save("./output/2pt/beta", betaa)
 plt.plot(Nsig, betaa, c='k')
 plt.axvline(Nexit, c='gray', linestyle='--')
@@ -210,9 +227,11 @@ I2 = Is(PR, CRS, PS, iexit)[1]
 I3 = Is(PR, CRS, PS, iexit)[2]
 I4 = Is(PR, CRS, PS, iexit)[3]
 I5 = Is(PR, CRS, PS, iexit)[4]
+I6 = Is(PR, CRS, PS, iexit)[5]
 with open("./output/2pt/Is.txt", "w") as f:
     f.write("I1 = " + str(I1) + "\n")
     f.write("I2 = " + str(I2) + "\n")
     f.write("I3 = " + str(I3) + "\n")
     f.write("I4 = " + str(I4) + "\n")
     f.write("I5 = " + str(I5) + "\n")
+    f.write("I6 = " + str(I6) + "\n")

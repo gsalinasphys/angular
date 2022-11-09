@@ -136,7 +136,6 @@ if __name__ == '__main__':
     # print(get_mass_matrices_exit(deformed_back, params))
 
     epsilon_exit = get_epsilons(deformed_back[:, :5], params)[0, 1]
-    print(epsilon_exit)
 
     kin_basis = get_kin_basis(deformed_back[:, :5], params)
     epll_exit, eperp_exit = kin_basis[0, 1:3], kin_basis[0, 3:5]
@@ -144,37 +143,36 @@ if __name__ == '__main__':
 
     eta_pll_exit = get_eta_parallel_perp(deformed_back[:, :5], params)[0, 1]
     eta_perp_exit = get_eta_parallel_perp(deformed_back[:, :5], params)[0, 2]
-    print(eta_perp_exit)
 
-    # grad_epsilon = grad_epsilon_exit(deformed_back, params)
-    # print(grad_epsilon)
+    grad_epsilon = grad_epsilon_exit(deformed_back, params)
     # grad_etas = grad_etas_exit(deformed_back, params)
     # print(grad_etas)
     # print(deformed_back[0])
-    # print(get_mass_matrices_exit(deformed_back, params))
+    print(get_mass_matrices_exit(deformed_back, params))
     tildeM = get_tildeM_exit(deformed_back, params)
-    # print(tildeM)
-
-    # phi_prime_exit = get_phi_primes(deformed_back[:, :5], params)[0, 1:]
-
-    # print(tildeM @ phi_prime_exit)
-
-    # print(epll_exit @ grad_epsilon)
-    # print(-np.sqrt(2*epsilon_exit) * epll_exit @ tildeM @ epll_exit)
-
-    # print(eperp_exit @ grad_epsilon)
-    # print(-np.sqrt(2*epsilon_exit) * eperp_exit @ tildeM @ epll_exit)
-
+    print(tildeM)
     print(eperp_exit @ tildeM @ epll_exit)
     print(epll_exit @ tildeM @ eperp_exit)
+    print(eperp_exit @ tildeM @ eperp_exit)
 
-    I1 = 0.03769592688493446
-    I2 = 0.012327765535058
-    I3 = 0.33950974428255654
-    I4 = 0.7590259701237988
-    I5 = 0.21191511228469154
+    phi_prime_exit = get_phi_primes(deformed_back[:, :5], params)[0, 1:]
 
-    print(eperp_exit @ tildeM @ eperp_exit * I5)
-    print(eta_perp_exit**2 / (3-epsilon_exit)**2 * I5)
-    print(-eta_perp_exit / sqrt(2*epsilon_exit) * I4)
-    print(-eta_pll_exit / sqrt(2*epsilon_exit) * I3)
+    print(grad_epsilon)
+    print(-tildeM @ phi_prime_exit)
+
+    print(epll_exit @ grad_epsilon)
+    print(-np.sqrt(2*epsilon_exit) * epll_exit @ tildeM @ epll_exit)
+
+    print(eperp_exit @ grad_epsilon)
+    print(-np.sqrt(2*epsilon_exit) * eperp_exit @ tildeM @ epll_exit)
+
+    # I1 = 0.03769592688493446
+    # I2 = 0.012327765535058
+    # I3 = 0.33950974428255654
+    # I4 = 0.7590259701237988
+    # I5 = 0.21191511228469154
+
+    # print(eperp_exit @ tildeM @ eperp_exit * I5)
+    # print(eta_perp_exit**2 / (3-epsilon_exit)**2 * I5)
+    # print(-eta_perp_exit / sqrt(2*epsilon_exit) * I4)
+    # print(-eta_pll_exit / sqrt(2*epsilon_exit) * I3)
