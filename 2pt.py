@@ -1,15 +1,13 @@
 import json
-import pickle
 import sys
-from math import cos, pi, sin, sqrt
+from math import sqrt
 
 import matplotlib as mpl
 import numpy as np
-import seaborn as sns
 from matplotlib import pyplot as plt
-from sympy.utilities import lambdify
 
-from curved import dotG, eperp2d, epll, magG
+from curved import eperp2d, epll
+from slowroll import get_epsilons, get_etas, get_metrics
 
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['figure.dpi'] = 600
@@ -25,8 +23,72 @@ import PyTransAngular as PyT
 import PyTransScripts as PyS
 
 
-def beta(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray) -> np.ndarray:
-    return CRS / np.sqrt(PR * PS)
+def get_2pt_initial(back: np.ndarray, params: dict, efolds_before: float, NB: float = 8.):
+    pval = np.array(list(params.values()))
+    
+    Ns = back[:, 0]
+    Nexit = Ns[-1] - efolds_before
+
+    k = PyS.kexitN(Nexit, back, pval, PyT)
+    Nstart, backExitMinus = PyS.ICsBE(NB, k, back, pval, PyT)
+
+    return k, Nstart, backExitMinus
+
+def get_2pts(back: np.ndarray, params: dict, efolds_before: float, NB: float = 8., tol: float = 1e-16) -> tuple:
+    nF = PyT.nF()
+    pval = np.array(list(params.values()))
+    
+    k, Nstart, backExitMinus = get_2pt_initial(back, params, efolds_before, NB)
+
+    Ns = back[:, 0]
+    Nev = Ns[Ns >= Nstart]
+    tols = np.array([tol, tol])
+    twoPt = PyT.sigEvolve(Nev, k, backExitMinus, pval, tols, True)
+
+    Nsig = twoPt[:, 0]
+    Pzeta = twoPt[:, 1]
+    sigma = twoPt[:, 1+1+2*nF:].reshape(len(Nsig), 2*nF, 2*nF)
+    Pphi = sigma[:, :nF, :nF]
+
+    k_deformed = k + 0.01*k
+    twoPt_deformed = PyT.sigEvolve(Nev, k_deformed, backExitMinus, pval, tols, True)
+    Pzeta_deformed = twoPt_deformed[:, 1]
+    ns = (np.log(Pzeta_deformed[-1])-np.log(Pzeta[-1])) / (np.log(k_deformed)-np.log(k)) + 4.0
+
+    Pzeta_nodim = Pzeta * k**3 / 2 / np.pi**2
+
+    return Nsig, Pphi, Pzeta_nodim, k, ns
+
+def get_PR_PS_CRS(back: np.ndarray, params: dict, efolds_before: float, NB: float = 8., tol: float = 1e-8):
+    nF = PyT.nF()
+    Nsig, Pphi, _, k, _ = get_2pts(back, params, efolds_before, NB, tol)
+
+    back = back[Ns >= Nsig[0]]
+    phidots = back[:, nF+1:]
+
+    epsilons = get_epsilons(back, params)[:, 1]
+    etas = get_etas(back, params)[:, 1:]
+
+    Gs = get_metrics(back, params)
+    PR = np.array([epll(Gs[ii], phidots[ii]) @ Gs[ii] @ Pphi[ii] @ Gs[ii] @ epll(Gs[ii], phidots[ii])
+                for ii in range(len(Nsig))]) / 2 / epsilons
+    PR_nodim = PR * k**3 / 2 / np.pi**2
+
+    CRS = np.array([epll(Gs[ii], phidots[ii]) @ Gs[ii] @ Pphi[ii] @ Gs[ii] @ eperp2d(Gs[ii], phidots[ii], etas[ii])
+                for ii in range(len(Nsig))]) / 2 / epsilons
+    CRS_nodim = CRS * k**3 / 2 / np.pi**2
+
+    PS = np.array([eperp2d(Gs[ii], phidots[ii], etas[ii]) @ Gs[ii] @ Pphi[ii] @ Gs[ii] @ eperp2d(Gs[ii], phidots[ii], etas[ii])
+                for ii in range(len(Nsig))]) / 2 / epsilons
+    PS_nodim = PS * k**3 / 2 / np.pi**2
+
+    return PR_nodim, CRS_nodim, PS_nodim
+
+def alpha(PR: np.ndarray, PS: np.ndarray) -> np.ndarray:
+    return PS / PR
+
+def beta(PR: np.ndarray, CRS: np.ndarray) -> np.ndarray:
+    return CRS / PR
 
 def TRS(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray, iexit: int) -> np.ndarray:
     return (-CRS[iexit] + np.sqrt(CRS[iexit]**2 + PR*PS[iexit] - PR[iexit]*PS[iexit])) / PS[iexit]
@@ -35,62 +97,34 @@ def TSS(PS: np.ndarray, iexit: int) -> np.ndarray:
     return np.sqrt(PS / PS[iexit])
 
 def Is(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray, iexit: int):
-    beta_end = beta(PR, CRS, PS)[-1]
+    alpha_exit = alpha(PR, PS)[iexit]
+    beta_exit = beta(PR, CRS)[iexit]
     TRS_end = TRS(PR, CRS, PS, iexit)[-1]
 
-    I1 = beta_end * sqrt(PS[iexit]/PR[-1]) * (1 - TRS_end*beta_end*sqrt(PS[iexit]/PR[-1]))
-    I2 = beta_end**2 * PS[iexit]/PR[-1]
-    I3 = 1 - TRS_end*beta_end*sqrt(PS[iexit]/PR[-1])
-    I4 = TRS_end * (1 - 2*TRS_end*beta_end*sqrt(PS[iexit]/PR[-1]) + (1+TRS_end**2)*beta_end**2*PS[iexit]/PR[-1])
-    I5 = beta_end * sqrt(PS[iexit]/PR[-1]) * (TRS_end - (1+TRS_end**2)*beta_end*sqrt(PS[iexit]/PR[-1]))
+    I1 = (beta_exit+TRS_end*alpha_exit) * (1+TRS_end*beta_exit) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)**2
+    I2 = (beta_exit+TRS_end*alpha_exit)**2 / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)**2
+    I3 = -(1+TRS_end*beta_exit) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)
+    I4 = (1+TRS_end*beta_exit) * (beta_exit+(alpha_exit-1)*TRS_end-beta_exit*TRS_end**2) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)**2
+    I5 = (beta_exit+TRS_end*alpha_exit) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)
+    I6 = (beta_exit+TRS_end*alpha_exit) * (beta_exit+(alpha_exit-1)*TRS_end-beta_exit*TRS_end**2) / (1+2*TRS_end*beta_exit+TRS_end**2*alpha_exit)**2
 
-    return I1, I2, I3, I4, I5
+    return I1, I2, I3, I4, I5, I6
 
 nF, nP = PyT.nF(), PyT.nP()
 with open("./output/setup/params.json", "r") as file:
     params = json.loads(file.readline())
-pval = np.array(list(params.values()))
-Npoints = 10_000
 back = np.load("./output/background/background.npy")
-back = back[::len(back)//Npoints]
-epsilon = np.load("./output/background/epsilon.npy")
-epsilon = epsilon[::len(epsilon)//Npoints]
-etas = np.load("./output/background/etas.npy")
-etas = etas.T[::len(etas.T)//Npoints].T
-Ns =  back.T[0]
 
-Nend = Ns[-1]
-Nexit = Nend - 55
-iexit = np.argmin(np.abs(Ns - Nexit))
-k = PyS.kexitN(Nexit, back, pval, PyT) 
+Ns =  back[:, 0]
+efolds_before = 55.
+Nexit = back[-1, 0] - efolds_before
 
-print(f'Horizon exit at N = {Nexit:.3} with k = {k:.3}')
-
-NB = 8.0
-Nstart, backExitMinus = PyS.ICsBE(NB, k, back, pval, PyT)
-
-print(f"2-pt calculation starts at: {Nstart:.3} e-folds")
-
-Nev = Ns[Ns >= Nstart]
-back = back[Ns >= Nstart]
-epsilon = epsilon[Ns >= Nstart]
-phis, phidots = back.T[1:nF+1], back.T[nF+1:]
-
-tols = np.array([10**-8, 10**-8])
-twoPt = PyT.sigEvolve(Nev, k, backExitMinus, pval, tols, True)
-Nsig = twoPt[:, 0]
-np.save("./output/2pt/Nsig", Nsig)
-Pzeta = twoPt[:, 1]
-sigma = twoPt[:, 1+1+2*nF:].reshape(len(Nsig), 2*nF, 2*nF)
-Pphi = sigma[:, :nF, :nF]
-
-Pzeta_nodim = Pzeta * k**3 / 2 / np.pi**2
-
-k_deformed = k + 0.01*k
-twoPt_deformed = PyT.sigEvolve(Nev, k_deformed, backExitMinus, pval, tols, True)
-Pzeta_deformed = twoPt_deformed[:,1]
-n_s = (np.log(Pzeta_deformed[-1])-np.log(Pzeta[-1])) / (np.log(k_deformed)-np.log(k)) + 4.0
-print(f'n_s: {n_s:.3f}')
+Nsig, Pphi, Pzeta, k, ns = get_2pts(back, params, efolds_before)
+print("ns: ", ns)
+PR, CRS, PS = get_PR_PS_CRS(back, params, efolds_before)
+np.save("./output/2pt/PR", PR)
+np.save("./output/2pt/CRS", CRS)
+np.save("./output/2pt/PS", PS)
 
 plt.plot(Nsig, Pphi[:, 0, 0], label=r"$P^{11}_\phi$")
 plt.plot(Nsig, np.abs(Pphi[:, 0, 1]), label=r"$\vert P^{12}_\phi \vert$")
@@ -105,31 +139,13 @@ plt.tight_layout()
 plt.savefig("./output/2pt/2pt.png")
 plt.clf()
 
-print(f'k: {k:.3}')
-print(f'Power spectrum at the end of inflation: {Pzeta_nodim[-1]:.3}')
+print(f'Power spectrum at the end of inflation: {Pzeta[-1]:.3}')
 
 iexit = np.argmin(np.abs(Nsig - Nexit))
-print(f'Power spectrum at horizon crossing: {Pzeta_nodim[iexit]:.3}')
+print(f'Power spectrum at horizon crossing: {Pzeta[iexit]:.3}')
 
-with open("./output/setup/G.txt", "rb") as file:
-    G = pickle.load(file)
-
-params_subs = {'p_'+str(ii): pval[ii] for ii in range(len(pval))}
-Gparams = G.subs(params_subs)
-Glbd = lambdify(['f_'+str(ii) for ii in range(nF)], Gparams)
-
-Gmatrices = np.array([Glbd(phi[0], phi[1]) for phi in phis.T])
-
-PR = np.array([epll(Gmatrices[ii], phidots.T[ii]) @
-            Gmatrices[ii] @
-            Pphi[ii] @
-            Gmatrices[ii] @
-            epll(Gmatrices[ii], phidots.T[ii])
-            for ii in range(len(Nsig))]) / 2 / epsilon
-PR_nodim = PR * k**3 / 2 / np.pi**2
-np.save("./output/2pt/PR", PR_nodim)
-plt.plot(Nsig, PR_nodim, c='k')
-plt.plot(Nsig, Pzeta_nodim, c='k', linestyle='--')
+plt.plot(Nsig, PR, c='k')
+plt.plot(Nsig, Pzeta, c='b', linestyle='--')
 plt.axvline(Nexit, c='gray', linestyle='--')
 plt.title(r'$P_R$ evolution',fontsize=16);
 plt.ylabel(r'$P_R$', fontsize=20) 
@@ -139,15 +155,7 @@ plt.tight_layout()
 plt.savefig("./output/2pt/PR.png")
 plt.clf()
 
-CRS = np.array([epll(Gmatrices[ii], phidots.T[ii]) @
-            Gmatrices[ii] @
-            Pphi[ii] @
-            Gmatrices[ii] @
-            eperp2d(Gmatrices[ii], phidots.T[ii], etas.T[ii])
-            for ii in range(len(Nsig))]) / 2 / epsilon
-CRS_nodim = CRS * k**3 / 2 / np.pi**2
-np.save("./output/2pt/CRS", CRS_nodim)
-plt.plot(Nsig, np.abs(CRS_nodim), c='k')
+plt.plot(Nsig, np.abs(CRS), c='k')
 plt.axvline(Nexit, c='gray', linestyle='--')
 plt.title(r'$C_{RS}$ evolution',fontsize=16);
 plt.ylabel(r'$\vert C_{RS} \vert$', fontsize=20) 
@@ -157,15 +165,7 @@ plt.tight_layout()
 plt.savefig("./output/2pt/CRS.png")
 plt.clf()
 
-PS = np.array([eperp2d(Gmatrices[ii], phidots.T[ii], etas.T[ii]) @
-            Gmatrices[ii] @
-            Pphi[ii] @
-            Gmatrices[ii] @
-            eperp2d(Gmatrices[ii], phidots.T[ii], etas.T[ii])
-            for ii in range(len(Nsig))]) / 2 / epsilon
-PS_nodim = PS * k**3 / 2 / np.pi**2
-np.save("./output/2pt/PS", PS_nodim)
-plt.plot(Nsig, PS_nodim, c='k')
+plt.plot(Nsig, PS, c='k')
 plt.axvline(Nexit, c='gray', linestyle='--')
 plt.title(r'$P_S$ evolution',fontsize=16);
 plt.ylabel(r'$P_S$', fontsize=20) 
@@ -175,7 +175,7 @@ plt.tight_layout()
 plt.savefig("./output/2pt/PS.png")
 plt.clf()
 
-betaa = beta(PR_nodim, CRS_nodim, PS_nodim)
+betaa = beta(PR, CRS)
 np.save("./output/2pt/beta", betaa)
 plt.plot(Nsig, betaa, c='k')
 plt.axvline(Nexit, c='gray', linestyle='--')
@@ -186,7 +186,7 @@ plt.tight_layout()
 plt.savefig("./output/2pt/beta.png")
 plt.clf()
 
-TRSa = TRS(PR_nodim, CRS_nodim, PS_nodim, iexit)
+TRSa = TRS(PR, CRS, PS, iexit)
 np.save("./output/2pt/TRS", TRSa)
 plt.plot(Nsig, TRSa, c='k')
 plt.xlim([Nsig[iexit], Nsig[-1]])
@@ -198,7 +198,7 @@ plt.tight_layout()
 plt.savefig("./output/2pt/TRS.png")
 plt.clf()
 
-TSSa = TSS(PS_nodim, iexit)
+TSSa = TSS(PS, iexit)
 np.save("./output/2pt/TSS", TSSa)
 plt.plot(Nsig, TSSa, c='k')
 plt.xlim([Nsig[iexit], Nsig[-1]])
@@ -210,14 +210,16 @@ plt.tight_layout()
 plt.savefig("./output/2pt/TSS.png")
 plt.clf()
 
-I1 = Is(PR_nodim, CRS_nodim, PS_nodim, iexit)[0]
-I2 = Is(PR_nodim, CRS_nodim, PS_nodim, iexit)[1]
-I3 = Is(PR_nodim, CRS_nodim, PS_nodim, iexit)[2]
-I4 = Is(PR_nodim, CRS_nodim, PS_nodim, iexit)[3]
-I5 = Is(PR_nodim, CRS_nodim, PS_nodim, iexit)[4]
+I1 = Is(PR, CRS, PS, iexit)[0]
+I2 = Is(PR, CRS, PS, iexit)[1]
+I3 = Is(PR, CRS, PS, iexit)[2]
+I4 = Is(PR, CRS, PS, iexit)[3]
+I5 = Is(PR, CRS, PS, iexit)[4]
+I6 = Is(PR, CRS, PS, iexit)[5]
 with open("./output/2pt/Is.txt", "w") as f:
     f.write("I1 = " + str(I1) + "\n")
     f.write("I2 = " + str(I2) + "\n")
     f.write("I3 = " + str(I3) + "\n")
     f.write("I4 = " + str(I4) + "\n")
     f.write("I5 = " + str(I5) + "\n")
+    f.write("I6 = " + str(I6) + "\n")
