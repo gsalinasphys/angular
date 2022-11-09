@@ -130,9 +130,6 @@ if __name__ == '__main__':
         params = json.loads(file.readline())
     back = np.load("./output/background/background.npy")
 
-    with open("./output/setup/G.txt", "rb") as file:
-        G = pickle.load(file)
-
     Hs = get_Hs(back, params)
     np.save("./output/background/Hs", Hs)
     plt.plot(Hs[:, 0], Hs[:, 1], c="k", linewidth=2)

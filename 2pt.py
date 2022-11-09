@@ -109,6 +109,7 @@ nF, nP = PyT.nF(), PyT.nP()
 with open("./output/setup/params.json", "r") as file:
     params = json.loads(file.readline())
 back = np.load("./output/background/background.npy")
+
 Ns =  back[:, 0]
 efolds_before = 55.
 Nexit = back[-1, 0] - efolds_before

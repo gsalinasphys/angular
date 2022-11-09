@@ -3,25 +3,16 @@ from itertools import product
 import numpy as np
 
 
-def dotG(G, v1, v2):
+def dotG(G: np.ndarray, v1: np.ndarray, v2: np.ndarray) -> float:
     return np.matmul(v1, np.matmul(G, v2))
 
-def magG(G, v):
+def magG(G: np.ndarray, v: np.ndarray) -> float:
     return np.sqrt(dotG(G, v, v))
 
-def epll(G, phidot):
+def epll(G: np.ndarray, phidot: np.ndarray) -> np.ndarray:
     return phidot / magG(G, phidot)
 
-def eperp2d(G, phidot, eta):
+def eperp2d(G: np.ndarray, phidot: np.ndarray, eta: np.ndarray) -> np.ndarray:
     epll_vec = epll(G, phidot)
     eperp_notnorm = np.matmul(np.identity(2) - np.outer(epll_vec, np.matmul(G, epll_vec)), eta)
     return eperp_notnorm / magG(G, eperp_notnorm)
-
-# def eperp2d(G, phidot, eta):
-#     epllv = epll(G, phidot)
-#     return np.array([-epllv[1], epllv[0]])
-
-# def eperp2d_2(Gmatrix, Gammamatrix, phidot, phiprimes, eta, dN):
-#     epll_vec = epll(Gmatrix, phidot)
-#     eperp_notnorm = np.gradient(epll_vec, dN) + sum([Gammamatrix[:, bb, cc] * phiprimes[bb] * epll_vec[cc] for bb, cc in product(range(2), repeat=2)])
-#     return eperp_notnorm / magG(Gmatrix, eperp_notnorm)
