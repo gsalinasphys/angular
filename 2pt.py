@@ -96,18 +96,6 @@ def TRS(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray, iexit: int) -> np.ndarr
 def TSS(PS: np.ndarray, iexit: int) -> np.ndarray:
     return np.sqrt(PS / PS[iexit])
 
-# def Is(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray, iexit: int):
-#     beta_end = beta(PR, CRS, PS)[-1]
-#     TRS_end = TRS(PR, CRS, PS, iexit)[-1]
-
-#     I1 = beta_end * sqrt(PS[iexit]/PR[-1]) * (1 - TRS_end*beta_end*sqrt(PS[iexit]/PR[-1]))
-#     I2 = beta_end**2 * PS[iexit]/PR[-1]
-#     I3 = 1 - TRS_end*beta_end*sqrt(PS[iexit]/PR[-1])
-#     I4 = TRS_end * (1 - 2*TRS_end*beta_end*sqrt(PS[iexit]/PR[-1]) + (1+TRS_end**2)*beta_end**2*PS[iexit]/PR[-1])
-#     I5 = beta_end * sqrt(PS[iexit]/PR[-1]) * (TRS_end - (1+TRS_end**2)*beta_end*sqrt(PS[iexit]/PR[-1]))
-
-#     return I1, I2, I3, I4, I5
-
 def Is(PR: np.ndarray, CRS: np.ndarray, PS: np.ndarray, iexit: int):
     alpha_exit = alpha(PR, PS)[iexit]
     beta_exit = beta(PR, CRS)[iexit]
