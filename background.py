@@ -18,8 +18,8 @@ PyTransSetup.pathSet()
 import PyTransAngular as PyT
 
 
-def get_background(initial: np.ndarray, params: dict, Nrange: tuple = (0, 100, 500_000), tol: float = 1e-12) -> np.ndarray:
-    Ns = np.linspace(Nrange[0], Nrange[1], Nrange[2])
+def get_background(initial: np.ndarray, params: dict, Nrange: tuple = (0, 100, 500_000), tol: float = 1e-30) -> np.ndarray:
+    Ns = np.linspace(Nrange[0], Nrange[1], Nrange[2], endpoint=True)
     pval = np.array(list(params.values()))
     tols = np.array([tol, tol])
     back = PyT.backEvolve(Ns, initial, pval, tols, True)

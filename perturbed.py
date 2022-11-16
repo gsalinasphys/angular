@@ -1,5 +1,4 @@
 import json
-import pickle
 import sys
 from math import atan, cos, pi, sin, sqrt
 
@@ -33,8 +32,36 @@ def get_mass_matrices(back: np.ndarray, params: dict) -> np.ndarray:
     return [PyT.ddV(phi, pval) / PyT.V(phi, pval) - np.outer(PyT.dV(phi, pval), PyT.dV(phi, pval)) / PyT.V(phi, pval)**2
         for phi in phis]
 
+# def get_deformed_initials(back: np.ndarray, efolds_from_end: float = 55., NB: float = 8., epsilon: float = 1e-5):
+#     Nexit = back[-1, 0] - efolds_from_end
+#     iNB = np.argmin(np.abs(back[:, 0] - Nexit + NB))
+
+#     initials = [back[iNB, 1:].copy(), back[iNB, 1:].copy(), back[iNB, 1:].copy()]
+#     initials[1][0] *= 1+epsilon
+#     initials[2][1] *= 1+epsilon
+
+#     return initials
+
+# def get_deformed_exits(initials, params: dict, NB: float = 8., tol: float = 1e-30, n_points: int = 500_000):
+#     backs = [get_background(initial, params, Nrange=(0., NB, n_points), tol=tol) for initial in initials]
+#     return [elem[-1, 1:] for elem in backs]
+
+# def deform_background(back: np.ndarray, params: dict, efolds_from_end: float = 55.,
+#                     epsilon: float = 1e-5, Nrange: tuple = (0, 100, 500_000),
+#                     NB: float = 8., tol: float = 1e-30):
+#     initials = get_deformed_initials(back, efolds_from_end, NB, epsilon)
+#     initials = get_deformed_exits(initials, params, NB, tol=tol)
+
+#     all_backs = [get_background(initial, params, Nrange=Nrange, tol=tol) for initial in initials]
+#     min_length = min([len(backgnd) for backgnd in all_backs])
+#     all_backs = [backgnd[:min_length] for backgnd in all_backs]
+
+#     return np.hstack((all_backs[0], all_backs[1][:, 1:], all_backs[2][:, 1:]))
+
+
 def deform_background(back: np.ndarray, params: dict, efolds_from_end: float = 55.,
-                    epsilon: float = 1e-5, Nrange: tuple = (0, 100, 500_000), tol: float = 1e-12):
+                    epsilon: float = 1e-5, Nrange: tuple = (0, 100, 500_000),
+                    tol: float = 1e-30):
     Nexit = back[-1, 0] - efolds_from_end
     iexit = np.argmin(np.abs(back[:, 0] - Nexit))
     phis_phidots_exit = back[iexit, 1:]
@@ -43,17 +70,23 @@ def deform_background(back: np.ndarray, params: dict, efolds_from_end: float = 5
                 phis_phidots_exit*np.array([1.+epsilon, 1., 1., 1.]),
                 phis_phidots_exit*np.array([1., 1.+epsilon, 1., 1.])]
 
-    Hs = get_Hs(back, params)
-    mphi, R =  params['mphi'], params['R']
-    deformed_rs = [np.linalg.norm(initials[ii][:2]) for ii in range(1, 3)]
-    deformed_thetas = [atan(initials[ii][1]/initials[ii][0]) for ii in range(1, 3)]
-    deformed_thetadots = [-1 / 18 / Hs[iexit, 1] * mphi**2 * (R-1) * (1-deformed_rs[ii]**2)**2 * \
-                        initials[ii+1][0] * initials[ii+1][1] / deformed_rs[ii]**2 for ii in range(2)]
-    deformed_phidots = [deformed_rs[ii] * deformed_thetadots[ii] * np.array([-sin(deformed_thetas[ii]), cos(deformed_thetas[ii])]) for ii in range(2)]
+    # pval = np.array(list(params.values()))
+    # deformed_Hs = [PyT.H(initials[ii], pval) for ii in range(1,3)]
+    # mphi, R =  params['mphi'], params['R']
+    # deformed_rs = [np.linalg.norm(initials[ii][:2]) for ii in range(1, 3)]
+    # deformed_thetas = [atan(initials[ii][1]/initials[ii][0]) for ii in range(1, 3)]
+    # deformed_thetadots = [-1 / 36 / deformed_Hs[ii] * mphi**2 * (R-1) * (1-deformed_rs[ii]**2)**2 * \
+    #                     sin(2*deformed_thetas[ii]) for ii in range(2)]
+    # deformed_phidots = [deformed_rs[ii] * deformed_thetadots[ii] * \
+    #                     np.array([-sin(deformed_thetas[ii]), cos(deformed_thetas[ii])])
+    #                     for ii in range(2)]
+    # initials = [phis_phidots_exit,
+    #             phis_phidots_exit*np.array([1.+epsilon, 1., 0., 0.]) + np.concatenate(([0.,0.], deformed_phidots[0])),
+    #             phis_phidots_exit*np.array([1., 1.+epsilon, 0., 0.]) + np.concatenate(([0.,0.], deformed_phidots[1]))]
 
-    initials = [phis_phidots_exit,
-                phis_phidots_exit*np.array([1.+epsilon, 1., 0., 0.]) + np.concatenate(([0.,0.], deformed_phidots[0])),
-                phis_phidots_exit*np.array([1., 1.+epsilon, 0., 0.]) + np.concatenate(([0.,0.], deformed_phidots[1]))]
+    # print(np.linalg.norm(initials[0][2:]))
+    # print(-1 / 36 / PyT.H(initials[0], pval) * mphi**2 * (R-1) * (1-np.linalg.norm(initials[0][:2])**2)**2 * \
+    #                     sin(2*atan(initials[0][1]/initials[0][0])))
 
     all_backs = [get_background(initial, params, Nrange=Nrange, tol=tol) for initial in initials]
     min_length = min([len(backgnd) for backgnd in all_backs])
@@ -70,9 +103,12 @@ def deformed_epsilons(deformed_back: np.ndarray, params: dict):
     return np.hstack((deformed_back[:, 0].reshape(-1, 1), all_epsilons[0], all_epsilons[1], all_epsilons[2]))
 
 def grad_epsilon_exit(deformed_back: np.ndarray, params: dict):
-    dphis = np.array([deformed_back[0, 5]-deformed_back[0, 1], deformed_back[0, 10]-deformed_back[0, 2]])
+    ns = np.array([deformed_back[0, 5:7] - deformed_back[0, 1:3],
+                deformed_back[0, 9:11] - deformed_back[0, 1:3]])
     epsilons = deformed_epsilons(deformed_back, params)[0, 1:]
-    return np.array([(epsilons[1]-epsilons[0])/dphis[0], (epsilons[2]-epsilons[0])/dphis[1]])
+    grads_mixed = np.array([epsilons[1]-epsilons[0],
+                        epsilons[2]-epsilons[0]])
+    return np.linalg.inv(ns) @ grads_mixed
 
 def deformed_etas(deformed_back: np.ndarray, params: dict):
     all_backs = np.array([np.hstack((deformed_back[:, 0].reshape(-1, 1), deformed_back[:, 4*ii+1:4*ii+5])) for ii in range(3)])
@@ -121,7 +157,18 @@ if __name__ == '__main__':
         params = json.loads(file.readline())
     back = np.load("./output/background/background.npy")
     
-    deformed_back = deform_background(back, params)
+    epsilon = 1e-5
+    deformed_back = deform_background(back, params, epsilon=epsilon)
+    # initials = get_deformed_initials(back, epsilon=epsilon)
+    # print(initials[1]-initials[0])
+    # print(initials[2]-initials[0])
+    # exits = get_deformed_exits(initials, params)
+    # print(exits[1]-exits[0])
+    # print(exits[2]-exits[0])
+
+    Nexit = back[-1, 0] - 55.
+    iNB = np.argmin(np.abs(back[:, 0] - Nexit + 8.))
+    iexit = np.argmin(np.abs(back[:, 0] - Nexit))
 
     labels = ["Original", fr"Perturbed in $\phi$", fr"Perturbed in $\chi$"]
     for ii in range(3):
@@ -133,24 +180,17 @@ if __name__ == '__main__':
     plt.savefig("./output/perturbed/from_exit.png")
     plt.clf()
 
-    # print(get_mass_matrices_exit(deformed_back, params))
+    print(grad_epsilon_exit(deformed_back, params))
 
     epsilon_exit = get_epsilons(deformed_back[:, :5], params)[0, 1]
 
     kin_basis = get_kin_basis(deformed_back[:, :5], params)
     epll_exit, eperp_exit = kin_basis[0, 1:3], kin_basis[0, 3:5]
-    # print(epll_exit, eperp_exit)
-
-    eta_pll_exit = get_eta_parallel_perp(deformed_back[:, :5], params)[0, 1]
-    eta_perp_exit = get_eta_parallel_perp(deformed_back[:, :5], params)[0, 2]
 
     grad_epsilon = grad_epsilon_exit(deformed_back, params)
-    # grad_etas = grad_etas_exit(deformed_back, params)
-    # print(grad_etas)
-    # print(deformed_back[0])
-    print(get_mass_matrices_exit(deformed_back, params))
     tildeM = get_tildeM_exit(deformed_back, params)
     print(tildeM)
+    print(epll_exit @ tildeM @ epll_exit)
     print(eperp_exit @ tildeM @ epll_exit)
     print(epll_exit @ tildeM @ eperp_exit)
     print(eperp_exit @ tildeM @ eperp_exit)

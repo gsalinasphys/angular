@@ -1,17 +1,13 @@
 import json
 import pickle
 import sys
-from functools import partial
 from itertools import combinations_with_replacement, product
-from math import cos, pi, sin
 from typing import Callable, List
 
-import numdifftools as nd
 import numpy as np
 from matplotlib import pyplot as plt
 from sympy.utilities import lambdify
 
-from background import get_background
 from curved import dotG, eperp2d, epll, magG
 
 location = "/home/gsalinas/GitHub/angular/PyTransport"
@@ -129,6 +125,8 @@ if __name__ == '__main__':
     with open("./output/setup/params.json", "r") as file:
         params = json.loads(file.readline())
     back = np.load("./output/background/background.npy")
+    Nexit = back[-1, 0] - 55.
+    iexit = np.argmin(np.abs(back[:, 0] - Nexit))
 
     Hs = get_Hs(back, params)
     np.save("./output/background/Hs", Hs)
@@ -142,6 +140,7 @@ if __name__ == '__main__':
     plt.clf()
 
     epsilons = get_epsilons(back, params)
+    print(epsilons[iexit])
     np.save("./output/background/epsilons", epsilons)
     plt.plot(epsilons[:, 0], epsilons[:, 1], c="k", linewidth=2)
     plt.title('Epsilon parameter')
@@ -162,6 +161,8 @@ if __name__ == '__main__':
 
     etaskin = get_eta_parallel_perp(back, params)
     etaplls, etaperps = etaskin[:, 1], etaskin[:, 2]
+    print(etaplls[iexit])
+    print(etaperps[iexit])
     np.save("./output/background/etaplls", etaplls)
     plt.plot(back[:, 0], np.abs(etaplls), c="k", linewidth=2)
     plt.title('Eta parallel')
