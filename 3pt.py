@@ -26,8 +26,6 @@ pval = np.array(list(params.values()))
 Npoints = 1_000
 back = np.load("./output/background/background.npy")
 back = back[::len(back)//Npoints]
-epsilon = np.load("./output/background/epsilon.npy")
-epsilon = epsilon[::len(epsilon)//Npoints]
 Ns =  back.T[0]
 
 Nend = Ns[-1]
@@ -49,7 +47,6 @@ print(f"3-pt calculation starts at: {Nstart} e-folds")
 
 Nev = Ns[Ns >= Nstart]
 back = back[Ns >= Nstart]
-epsilon = epsilon[Ns >= Nstart]
 
 tols = np.array([10**-8, 10**-8])
 threePt = PyT.alphaEvolve(Nev, k1, k2, k3, backExitMinus, pval, tols, True)
