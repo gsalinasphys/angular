@@ -1,6 +1,6 @@
 import pickle
 
-from sympy import Identity, diff, hessian, log, symarray
+from sympy import Identity, symarray
 
 from PyTransport import PyTransSetup
 
