@@ -43,7 +43,6 @@ kM = np.min(np.array([k1, k2, k3]))
 
 # NBs = [6.0, 8.0, 10.0, 12.0]
 NBs= [6.0]
-plots = []
 for NB in NBs:
     Nstart, backExitMinus = PyS.ICsBM(NB, kM, back, pval, PyT)
     print(f"3-pt calculation starts at: {Nstart} e-folds")
@@ -93,3 +92,5 @@ plt.yticks(fontsize=20)
 # plt.legend()
 plt.tight_layout()
 plt.savefig("./output/3pt/fNL_all.png")
+
+np.save("output/3pt/fNL", np.vstack([Nalpha, fNL]))
