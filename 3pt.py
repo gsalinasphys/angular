@@ -48,7 +48,7 @@ Nstart, backExitMinus = PyS.ICsBM(NB, kM, back, pval, PyT)  # Finds initial cond
 print(f"3-pt calculation starts at: {Nstart} e-folds")
 
 Nev = Ns[Ns >= Nstart]  # Restricting to Ns after Nstart
-tols = np.array([10**-8, 10**-8])   # Integration tolerances
+tols = np.array([10**-8, 10**-8])   # Integration tolerances, try not to play too much with this
 threePt = PyT.alphaEvolve(Nev, k1, k2, k3, backExitMinus, pval, tols, True) # Three-point function integration
 Nalpha = threePt[:, 0]  # Array containing the number of e-folds for each resulting point
 Pzetas, B = threePt[:, 1:4], threePt[:, 4]  # Curvature Power Spectrum and Bispectrum
